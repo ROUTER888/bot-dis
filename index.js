@@ -3,18 +3,10 @@ const keepAlive = require('./keep_alive.js');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { 
     joinVoiceChannel, 
-    createAudioPlayer, 
-    createAudioResource, 
-    AudioPlayerStatus, 
-    NoSubscriberBehavior,
     getVoiceConnection
 } = require('@discordjs/voice');
 
-// Ép dự án dùng FFmpeg từ gói ffmpeg-static
-const ffmpeg = require('ffmpeg-static');
-process.env.FFMPEG_PATH = ffmpeg;
-
-// Khởi chạy Web Server keep-alive
+// 1. Khởi chạy Web Server keep-alive (nếu bạn dùng Render/Koyeb)
 keepAlive();
 
 const client = new Client({
@@ -26,38 +18,6 @@ const client = new Client({
     ]
 });
 
-// Stream Lofi MP3 trực tiếp cực kỳ ổn định
-const LOFI_STREAM_URL = 'https://stream.zeno.fm/f3wvbbqmdg8uv';
-
-function playLofi(connection) {
-    const player = createAudioPlayer({
-        behaviors: {
-            noSubscriber: NoSubscriberBehavior.Play
-        }
-    });
-
-    const resource = createAudioResource(LOFI_STREAM_URL, {
-        inlineVolume: true
-    });
-
-    if (resource.volume) {
-        resource.volume.setVolume(1.0);
-    }
-
-    player.play(resource);
-    connection.subscribe(player);
-
-    player.on(AudioPlayerStatus.Idle, () => {
-        console.log('Stream kết thúc hoặc mất kết nối, đang phát lại...');
-        setTimeout(() => playLofi(connection), 3000);
-    });
-
-    player.on('error', error => {
-        console.error('Lỗi Audio Player:', error.message);
-        setTimeout(() => playLofi(connection), 3000);
-    });
-}
-
 client.once('clientReady', () => {
     console.log(`Bot đã sẵn sàng! Đăng nhập dưới tên: ${client.user.tag}`);
 });
@@ -65,7 +25,8 @@ client.once('clientReady', () => {
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    if (message.content === '!lofi') {
+    // Lệnh gọi bot vào phòng voice và ở lì trong đó: !treo
+    if (message.content === '!treo') {
         const voiceChannel = message.member?.voice.channel;
 
         if (!voiceChannel) {
@@ -73,26 +34,27 @@ client.on('messageCreate', async message => {
         }
 
         try {
+            // Kết nối vào phòng và giữ kết nối vĩnh viễn
             const connection = joinVoiceChannel({
                 channelId: voiceChannel.id,
                 guildId: voiceChannel.guild.id,
                 adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-                selfDeaf: true
+                selfDeaf: true // Tự động tắt tai nghe
             });
 
-            playLofi(connection);
-            message.reply(`🎵 Đã tham gia kênh **${voiceChannel.name}** và bắt đầu phát Lofi 24/7!`);
+            message.reply(`🛋️ Đã vào kênh **${voiceChannel.name}** và treo phòng thành công (ở lại 24/7 không out)!`);
         } catch (error) {
             console.error(error);
             message.reply('Đã có lỗi xảy ra khi tham gia kênh thoại.');
         }
     }
 
-    if (message.content === '!stop') {
+    // Lệnh đuổi bot ra khỏi phòng: !out
+    if (message.content === '!out') {
         const connection = getVoiceConnection(message.guild.id);
         if (connection) {
             connection.destroy();
-            message.reply('👋 Đã dừng phát và rời kênh thoại.');
+            message.reply('👋 Đã rời kênh thoại.');
         } else {
             message.reply('Bot hiện không có trong kênh thoại nào.');
         }

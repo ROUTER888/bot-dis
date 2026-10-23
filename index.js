@@ -10,7 +10,11 @@ const {
     getVoiceConnection
 } = require('@discordjs/voice');
 
-// 1. Khởi chạy Web Server keep-alive
+// Ép dự án dùng FFmpeg từ gói ffmpeg-static
+const ffmpeg = require('ffmpeg-static');
+process.env.FFMPEG_PATH = ffmpeg;
+
+// Khởi chạy Web Server keep-alive
 keepAlive();
 
 const client = new Client({
@@ -22,7 +26,7 @@ const client = new Client({
     ]
 });
 
-// 2. Sử dụng Link stream Lofi chuẩn định dạng MP3 trực tiếp (Rất ổn định)
+// Stream Lofi MP3 trực tiếp cực kỳ ổn định
 const LOFI_STREAM_URL = 'https://stream.zeno.fm/f3wvbbqmdg8uv';
 
 function playLofi(connection) {
@@ -32,13 +36,12 @@ function playLofi(connection) {
         }
     });
 
-    // Tạo resource trực tiếp từ URL stream HTTP
     const resource = createAudioResource(LOFI_STREAM_URL, {
         inlineVolume: true
     });
 
     if (resource.volume) {
-        resource.volume.setVolume(1.0); // Âm lượng tối đa 100%
+        resource.volume.setVolume(1.0);
     }
 
     player.play(resource);

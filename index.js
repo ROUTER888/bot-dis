@@ -10,6 +10,9 @@ const {
     getVoiceConnection
 } = require('@discordjs/voice');
 
+const ffmpeg = require('ffmpeg-static');
+process.env.FFMPEG_PATH = ffmpeg;
+
 // 1. Khởi chạy Web Server giữ bot online 24/7
 keepAlive();
 
